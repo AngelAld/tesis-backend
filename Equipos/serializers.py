@@ -15,9 +15,9 @@ from django.utils.timezone import now
 from django.db.transaction import atomic
 from Sensores.models import SensorStats
 
-estadoEquipoDefault, _ = EstadoEquipo.objects.get_or_create(nombre="Bueno")
-estadoAlertaDefault, _ = EstadoAlerta.objects.get_or_create(nombre="Sin alerta")
-estadoHardwareDefault, _ = EstadoHardware.objects.get_or_create(nombre="Bueno")
+# estadoEquipoDefault, _ = EstadoEquipo.objects.get_or_create(nombre="Bueno")
+# estadoAlertaDefault, _ = EstadoAlerta.objects.get_or_create(nombre="Sin alerta")
+# estadoHardwareDefault, _ = EstadoHardware.objects.get_or_create(nombre="Bueno")
 
 
 def validateAreaIp(area: Area, ip):
@@ -54,20 +54,20 @@ class CpuSerializer(ModelSerializer):
         ]
         read_only_fields = ["id", "fecha_registro"]
 
-    @atomic
-    def create(self, validated_data):
-        equipo = validated_data.get("equipo")
-        nombre = validated_data.get("nombre")
-        estado = estadoHardwareDefault
-        fecha_registro = now()
+    # @atomic
+    # def create(self, validated_data):
+    #     equipo = validated_data.get("equipo")
+    #     nombre = validated_data.get("nombre")
+    #     estado = estadoHardwareDefault
+    #     fecha_registro = now()
 
-        cpu, _ = Cpu.objects.get_or_create(
-            equipo=equipo,
-            nombre=nombre,
-            defaults={"estado": estado, "fecha_registro": fecha_registro},
-        )
+    #     cpu, _ = Cpu.objects.get_or_create(
+    #         equipo=equipo,
+    #         nombre=nombre,
+    #         defaults={"estado": estado, "fecha_registro": fecha_registro},
+    #     )
 
-        return cpu
+    #     return cpu
 
 
 class MemorySerializer(ModelSerializer):
@@ -80,25 +80,25 @@ class MemorySerializer(ModelSerializer):
         ]
         read_only_fields = ["id", "fecha_registro"]
 
-    @atomic
-    def create(self, validated_data):
-        equipo = validated_data.get("equipo")
-        nombre = validated_data.get("nombre")
-        estado = estadoHardwareDefault
-        fecha_registro = now()
+    # @atomic
+    # def create(self, validated_data):
+    #     equipo = validated_data.get("equipo")
+    #     nombre = validated_data.get("nombre")
+    #     estado = estadoHardwareDefault
+    #     fecha_registro = now()
 
-        memory, created = Memory.objects.get_or_create(
-            equipo=equipo,
-            nombre=nombre,
-            defaults={"estado": estado, "fecha_registro": fecha_registro},
-        )
+    #     memory, created = Memory.objects.get_or_create(
+    #         equipo=equipo,
+    #         nombre=nombre,
+    #         defaults={"estado": estado, "fecha_registro": fecha_registro},
+    #     )
 
-        if not created:
-            memory.estado = estado
-            memory.fecha_registro = fecha_registro
-            memory.save()
+    #     if not created:
+    #         memory.estado = estado
+    #         memory.fecha_registro = fecha_registro
+    #         memory.save()
 
-        return memory
+    #     return memory
 
 
 class DiskSerializer(ModelSerializer):
@@ -111,24 +111,24 @@ class DiskSerializer(ModelSerializer):
         ]
         read_only_fields = ["id", "fecha_registro"]
 
-    @atomic
-    def create(self, validated_data):
-        equipo = validated_data.get("equipo")
-        nombre = validated_data.get("nombre")
-        estado = estadoHardwareDefault
-        fecha_registro = now()
+    # @atomic
+    # def create(self, validated_data):
+    #     equipo = validated_data.get("equipo")
+    #     nombre = validated_data.get("nombre")
+    #     estado = estadoHardwareDefault
+    #     fecha_registro = now()
 
-        disk, created = Disk.objects.get_or_create(
-            equipo=equipo,
-            nombre=nombre,
-            defaults={"estado": estado, "fecha_registro": fecha_registro},
-        )
-        if not created:
-            disk.estado = estado
-            disk.fecha_registro = fecha_registro
-            disk.save()
+    #     disk, created = Disk.objects.get_or_create(
+    #         equipo=equipo,
+    #         nombre=nombre,
+    #         defaults={"estado": estado, "fecha_registro": fecha_registro},
+    #     )
+    #     if not created:
+    #         disk.estado = estado
+    #         disk.fecha_registro = fecha_registro
+    #         disk.save()
 
-        return disk
+    #     return disk
 
 
 # este es para los agentes
@@ -170,50 +170,50 @@ class EquipoSerializer(ModelSerializer):
             "area_id": {"write_only": True},
         }
 
-    @atomic
-    def create(self, validated_data):
-        hostname = validated_data.get("hostname")
-        ip = validated_data.get("ip")
-        estado = True
-        last_update = now()
-        estado_equipo = estadoEquipoDefault
-        estado_alerta = estadoAlertaDefault
-        area = getAreaByIp(ip)
-        # hardware
+        # @atomic
+        # def create(self, validated_data):
+        #     hostname = validated_data.get("hostname")
+        #     ip = validated_data.get("ip")
+        #     estado = True
+        #     last_update = now()
+        #     estado_equipo = estadoEquipoDefault
+        #     estado_alerta = estadoAlertaDefault
+        #     area = getAreaByIp(ip)
+        #     # hardware
 
-        cpus = validated_data.pop("cpu_set", [])
-        memorys = validated_data.pop("memory_set", [])
-        disks = validated_data.pop("disk_set", [])
+        #     cpus = validated_data.pop("cpu_set", [])
+        #     memorys = validated_data.pop("memory_set", [])
+        #     disks = validated_data.pop("disk_set", [])
 
-        equipo, created = Equipo.objects.get_or_create(
-            hostname=hostname,
-            defaults={
-                "ip": ip,
-                "estado": estado,
-                "area": area,
-                "last_update": last_update,
-                "estado_equipo": estado_equipo,
-                "estado_alerta": estado_alerta,
-            },
-        )
-        if not created:
-            equipo.last_update = last_update
-            equipo.ip = ip
-            equipo.area = area
-            equipo.save()
+        #     equipo, created = Equipo.objects.get_or_create(
+        #         hostname=hostname,
+        #         defaults={
+        #             "ip": ip,
+        #             "estado": estado,
+        #             "area": area,
+        #             "last_update": last_update,
+        #             "estado_equipo": estado_equipo,
+        #             "estado_alerta": estado_alerta,
+        #         },
+        #     )
+        #     if not created:
+        #         equipo.last_update = last_update
+        #         equipo.ip = ip
+        #         equipo.area = area
+        #         equipo.save()
 
-        for cpu in cpus:
-            cpu["equipo"] = equipo
-            CpuSerializer().create(cpu)
+        #     for cpu in cpus:
+        #         cpu["equipo"] = equipo
+        #         CpuSerializer().create(cpu)
 
-        for memory in memorys:
-            memory["equipo"] = equipo
-            MemorySerializer().create(memory)
-        for disk in disks:
-            disk["equipo"] = equipo
-            DiskSerializer().create(disk)
+        #     for memory in memorys:
+        #         memory["equipo"] = equipo
+        #         MemorySerializer().create(memory)
+        #     for disk in disks:
+        #         disk["equipo"] = equipo
+        #         DiskSerializer().create(disk)
 
-        return equipo
+        # return equipo
 
 
 class SensoresSerializer(serializers.Serializer):
