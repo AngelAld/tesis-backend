@@ -1,5 +1,3 @@
-from pyexpat import model
-from turtle import mode
 from django.db import models
 from Equipos.models import Equipo, Modelo
 from django.utils.timezone import now
