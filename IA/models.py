@@ -1,13 +1,24 @@
-from pyexpat import model
-from turtle import mode
 from django.db import models
+
 from Equipos.models import Equipo, Modelo
-from django.utils.timezone import now
 
 
-class SensorStats(models.Model):
+class ModeloIA(models.Model):
+    nombre = models.CharField(max_length=100)
+    archivo = models.FileField(upload_to="modelos/")
+    modelo_equipo = models.ForeignKey(Modelo, on_delete=models.CASCADE)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    variable_objetivo = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"{self.nombre} - {self.modelo_equipo.nombre}"
+
+
+class Prediccion(models.Model):
+    modelo_ia = models.ForeignKey(ModeloIA, on_delete=models.CASCADE)
+    modelo_equipo = models.ForeignKey(Modelo, on_delete=models.CASCADE)
     equipo = models.ForeignKey(Equipo, on_delete=models.CASCADE)
-    fecha_registro = models.DateTimeField(default=now)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
     cpu_total_load = models.FloatField()
     cpu_core_max_load = models.FloatField()
     cpu_core_max_temp = models.FloatField()
@@ -29,26 +40,8 @@ class SensorStats(models.Model):
     max_read = models.FloatField()
     max_write = models.FloatField()
     max_activity = models.FloatField()
+    failure_percentage = models.FloatField()
+    is_manual = models.BooleanField(default=False)
 
     def __str__(self):
-        return f"{self.equipo} - {self.fecha_registro}"
-
-
-class FailureLogs(models.Model):
-    equipo = models.ForeignKey(Equipo, on_delete=models.CASCADE)
-    fecha_registro = models.DateTimeField(default=now)
-    error = models.TextField()
-
-    def __str__(self):
-        return f"{self.equipo} - {self.fecha_registro}"
-
-
-class DataSet(models.Model):
-    fecha_registro = models.DateTimeField(default=now)
-    csv = models.FileField(upload_to="datasets/")
-    modelo = models.ForeignKey(Modelo, on_delete=models.CASCADE)
-    fecha_inicio = models.DateTimeField(null=True)
-    fecha_fin = models.DateTimeField(null=True)
-
-    def __str__(self):
-        return f"{self.modelo} - {self.fecha_registro}"
+        return f"{self.modelo_ia} - {self.fecha_creacion}"

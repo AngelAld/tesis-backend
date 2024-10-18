@@ -1,5 +1,8 @@
+import re
 from django.db import models
 from django.utils.timezone import now
+
+from Areas.models import Area
 
 
 class EstadoEquipo(models.Model):
@@ -26,11 +29,9 @@ class EstadoHardware(models.Model):
         return self.nombre
 
 
-class Area(models.Model):
+class Modelo(models.Model):
     nombre = models.CharField(max_length=50)
-    ip = models.GenericIPAddressField()
     descripcion = models.TextField(blank=True)
-    estado = models.BooleanField(default=True)
 
     def __str__(self):
         return self.nombre
@@ -40,6 +41,9 @@ class Equipo(models.Model):
     hostname = models.CharField(max_length=50)
     ip = models.GenericIPAddressField()
     area = models.ForeignKey(Area, on_delete=models.PROTECT)
+    modelo = models.ForeignKey(
+        Modelo, on_delete=models.PROTECT, null=True, related_name="equipo_set"
+    )
     estado = models.BooleanField(default=True)
     fecha_registro = models.DateTimeField(default=now)
     last_update = models.DateTimeField(default=now)

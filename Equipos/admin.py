@@ -8,6 +8,7 @@ from .models import (
     Cpu,
     Memory,
     Disk,
+    Modelo,
 )
 
 admin.site.register(Equipo)
@@ -18,3 +19,4 @@ admin.site.register(Area)
 admin.site.register(Cpu)
 admin.site.register(Memory)
 admin.site.register(Disk)
+admin.site.register(Modelo)

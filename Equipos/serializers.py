@@ -1,4 +1,5 @@
-from rest_framework.serializers import ModelSerializer, IntegerField
+from rest_framework import serializers
+from rest_framework.serializers import ModelSerializer
 from Equipos.models import (
     EstadoEquipo,
     EstadoAlerta,
@@ -8,10 +9,11 @@ from Equipos.models import (
     Cpu,
     Memory,
     Disk,
+    Modelo,
 )
 from django.utils.timezone import now
 from django.db.transaction import atomic
-
+from Sensores.models import SensorStats
 
 estadoEquipoDefault, _ = EstadoEquipo.objects.get_or_create(nombre="Bueno")
 estadoAlertaDefault, _ = EstadoAlerta.objects.get_or_create(nombre="Sin alerta")
@@ -47,10 +49,10 @@ class CpuSerializer(ModelSerializer):
         fields = [
             "id",
             "nombre",
-            "estado",
+            # "estado",
             "fecha_registro",
         ]
-        read_only_fields = ["id", "fecha_registro", "estado"]
+        read_only_fields = ["id", "fecha_registro"]
 
     @atomic
     def create(self, validated_data):
@@ -185,10 +187,10 @@ class EquipoSerializer(ModelSerializer):
 
         equipo, created = Equipo.objects.get_or_create(
             hostname=hostname,
-            ip=ip,
-            area=area,
             defaults={
+                "ip": ip,
                 "estado": estado,
+                "area": area,
                 "last_update": last_update,
                 "estado_equipo": estado_equipo,
                 "estado_alerta": estado_alerta,
@@ -196,6 +198,8 @@ class EquipoSerializer(ModelSerializer):
         )
         if not created:
             equipo.last_update = last_update
+            equipo.ip = ip
+            equipo.area = area
             equipo.save()
 
         for cpu in cpus:
@@ -210,3 +214,111 @@ class EquipoSerializer(ModelSerializer):
             DiskSerializer().create(disk)
 
         return equipo
+
+
+class SensoresSerializer(serializers.Serializer):
+    cpu = serializers.SerializerMethodField()
+    memoria = serializers.SerializerMethodField()
+    disco = serializers.SerializerMethodField()
+
+    def get_cpu(self, obj):
+        return {
+            "temperatura": obj["current"].cpu_core_avg_temp,
+        }
+
+    def get_memoria(self, obj):
+        return {
+            "usada": obj["current"].memory_load,
+        }
+
+    def get_disco(self, obj):
+        return {
+            "usado": obj["current"].avg_activity,
+        }
+
+
+# este es para la api
+
+
+class EquipoListSerializer(serializers.ModelSerializer):
+    estado_equipo = serializers.CharField(source="estado_equipo.nombre")
+    estado_alerta = serializers.CharField(source="estado_alerta.nombre")
+    sensores = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Equipo
+        fields = [
+            "id",
+            "hostname",
+            "ip",
+            "last_update",
+            "estado_equipo",
+            "estado_alerta",
+            "sensores",
+        ]
+
+    def get_sensores(self, obj):
+        try:
+            latest_stats = SensorStats.objects.filter(equipo=obj).order_by(
+                "-fecha_registro"
+            )[:2]
+            if len(latest_stats) < 2:
+                return None
+            stats_data = {"current": latest_stats[0], "previous": latest_stats[1]}
+            return SensoresSerializer(stats_data).data
+        except SensorStats.DoesNotExist:
+            return None
+
+
+class EquipoDetalleSerializer(serializers.ModelSerializer):
+    estado_equipo = serializers.CharField(source="estado_equipo.nombre")
+    estado_alerta = serializers.CharField(source="estado_alerta.nombre")
+    cpu_set = CpuSerializer(many=True)
+    memory_set = MemorySerializer(many=True)
+    disk_set = DiskSerializer(many=True)
+    area = serializers.CharField(source="area.nombre")
+
+    class Meta:
+        model = Equipo
+        fields = [
+            "id",
+            "hostname",
+            "ip",
+            "area",
+            "modelo",
+            "estado",
+            "fecha_registro",
+            "last_update",
+            "estado_equipo",
+            "estado_alerta",
+            "cpu_set",
+            "memory_set",
+            "disk_set",
+        ]
+        read_only_fields = [
+            "id",
+            "hostname",
+            "ip",
+            "area",
+            "estado",
+            "fecha_registro",
+            "last_update",
+            "cpu_set",
+            "memory_set",
+            "disk_set",
+        ]
+
+    @atomic
+    def update(self, instance, validated_data):
+        validated_data.pop("cpu_set", None)
+        validated_data.pop("memory_set", None)
+        validated_data.pop("disk_set", None)
+        instance.modelo = validated_data.get("modelo", instance.modelo)
+        instance.save()
+        return instance
+
+
+class ModeloSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Modelo
+        fields = "__all__"
