@@ -8,11 +8,12 @@ from .serializers import UserSerializer
 
 class ProfileView(APIView):
     permission_classes = [IsAuthenticated]
+    serializer_class = UserSerializer
 
     def get(self, request):
         try:
             user = User.objects.get(id=request.user.id)
-            serializer = UserSerializer(user)
+            serializer = self.serializer_class(user)
             return Response(serializer.data, status=status.HTTP_200_OK)
         except User.DoesNotExist:
             return Response(
