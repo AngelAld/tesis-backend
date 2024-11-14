@@ -1,8 +1,12 @@
 from pyexpat import model
 from rest_framework import serializers
-from .models import ModeloIA, Prediccion
+
+from IA.util import predecir
+from .models import ModeloIA, Prediccion, cpu_columns, disk_columns, mem_columns
 import tensorflow as tf
 import numpy as np
+import joblib
+from sklearn.preprocessing import StandardScaler
 
 
 class ModeloIASerializer(serializers.ModelSerializer):
@@ -56,20 +60,30 @@ class PrediccionManualSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         modelIA: ModeloIA = validated_data.pop("modelo_ia")
+        print(modelIA)
         modelo_equipo = validated_data.pop("modelo_equipo")
         equipo = validated_data.pop("equipo")
         try:
-            tf_model = tf.keras.models.load_model(modelIA.archivo.path)  # type: ignore
             variable_objetivo = modelIA.variable_objetivo
-            expected_value = validated_data.pop(variable_objetivo)
 
-            variables_entrada = [
-                validated_data.get(field) for field in validated_data.keys()
+            componente = modelIA.componente
+            columns = []
+            if componente == "cpu":
+                columns = cpu_columns
+            elif componente == "ram":
+                columns = mem_columns
+            elif componente == "disk":
+                columns = disk_columns
+
+            variables = [
+                validated_data.get(column)
+                for column in columns
+                if column != variable_objetivo
             ]
 
-            input_values = np.array(variables_entrada, dtype=float).reshape(1, -1)
+            expected_value = validated_data.get(variable_objetivo)
 
-            predicted_value = tf_model.predict([input_values])[0][0]
+            predicted_value = predecir(modelIA, variables)
 
             failure_percentage = abs(expected_value - predicted_value) / expected_value
 
@@ -86,11 +100,6 @@ class PrediccionManualSerializer(serializers.ModelSerializer):
             validated_data["equipo"] = equipo
 
             instance = Prediccion.objects.create(**validated_data)
-
-            print("## PREDICTION ##")
-            print(f"Expected Value: {expected_value}")
-            print(f"Predicted Value: {predicted_value}")
-            print(f"Failure Percentage: {failure_percentage}")
 
             return instance
         except Exception as e:

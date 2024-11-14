@@ -1,14 +1,47 @@
 from django.db import models
-
 from Equipos.models import Equipo, Modelo
+
+cpu_columns = [
+    "cpu_total_load",
+    "cpu_core_max_load",
+    "cpu_core_max_temp",
+    "cpu_core_avg_temp",
+    "cpu_avg_core_clock",
+    "cpu_bus_speed_clock",
+    "cpu_package_power",
+    "cpu_cores_power",
+    "cpu_memory_power",
+    "cpu_core_voltage",
+]
+mem_columns = [
+    "cpu_total_load",
+    "cpu_core_max_temp",
+    "cpu_core_avg_temp",
+    "cpu_avg_core_clock",
+    "memory_load",
+    "memory_available",
+    "memory_used",
+]
+disk_columns = [
+    "avg_used_space",
+    "avg_read",
+    "avg_write",
+    "avg_activity",
+    "max_used_space",
+    "max_read",
+    "max_write",
+    "max_activity",
+]
 
 
 class ModeloIA(models.Model):
     nombre = models.CharField(max_length=100)
     archivo = models.FileField(upload_to="modelos/")
+    scaler = models.FileField(upload_to="modelos/", null=True, blank=True)
     modelo_equipo = models.ForeignKey(Modelo, on_delete=models.CASCADE)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
     variable_objetivo = models.CharField(max_length=100)
+    componente = models.CharField(max_length=100)
 
     def __str__(self):
         return f"{self.nombre} - {self.modelo_equipo.nombre}"
