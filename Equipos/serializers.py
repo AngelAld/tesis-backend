@@ -222,6 +222,8 @@ class SensoresSerializer(serializers.Serializer):
     disco = serializers.SerializerMethodField()
 
     def get_cpu(self, obj):
+        if obj["current"].cpu_core_avg_temp > 60:
+            print("Alerta de temperatura")
         return {
             "temperatura": obj["current"].cpu_core_avg_temp,
         }

@@ -1,12 +1,13 @@
-from pyexpat import model
 from rest_framework import serializers
 
 from IA.util import predecir
-from .models import ModeloIA, Prediccion, cpu_columns, disk_columns, mem_columns
-import tensorflow as tf
-import numpy as np
-import joblib
-from sklearn.preprocessing import StandardScaler
+from IA.models import (
+    ModeloIA,
+    Prediccion,
+    cpu_columns,
+    disk_columns,
+    mem_columns,
+)
 
 
 class ModeloIASerializer(serializers.ModelSerializer):
@@ -65,7 +66,6 @@ class PrediccionManualSerializer(serializers.ModelSerializer):
         equipo = validated_data.pop("equipo")
         try:
             variable_objetivo = modelIA.variable_objetivo
-
             componente = modelIA.componente
             columns = []
             if componente == "cpu":
@@ -82,23 +82,21 @@ class PrediccionManualSerializer(serializers.ModelSerializer):
             ]
 
             expected_value = validated_data.get(variable_objetivo)
-
             predicted_value = predecir(modelIA, variables)
-
-            failure_percentage = abs(expected_value - predicted_value) / expected_value
+            print("Predicción #################################")
+            print("valor esperado: ", predicted_value)
+            print("valor real: ", expected_value)
+            failure_percentage = abs(expected_value - predicted_value)
+            if failure_percentage > 100:
+                failure_percentage = 100
+            print("Porcentaje de error: ", failure_percentage)
 
             validated_data["failure_percentage"] = failure_percentage
-
             validated_data["modelo_equipo"] = modelo_equipo
-
             validated_data["is_manual"] = True
-
             validated_data[variable_objetivo] = expected_value
-
             validated_data["modelo_ia"] = modelIA
-
             validated_data["equipo"] = equipo
-
             instance = Prediccion.objects.create(**validated_data)
 
             return instance
@@ -107,4 +105,22 @@ class PrediccionManualSerializer(serializers.ModelSerializer):
             print(e)
             raise serializers.ValidationError("Error al realizar la predicción")
 
-        # predict the failure percentage
+
+class PrediccionDashboardSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Prediccion
+        fields = [
+            "id",
+            "modelo_ia",
+            "modelo_equipo",
+            "equipo",
+            "failure_percentage",
+            "fecha_creacion",
+        ]
+
+
+class DashboardSerializer(serializers.Serializer):
+    num_equipos = serializers.IntegerField()
+    num_modelos = serializers.IntegerField()
+    num_areas = serializers.IntegerField()
+    num_predicciones = serializers.IntegerField()
