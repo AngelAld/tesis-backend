@@ -1,6 +1,4 @@
-import re
 from django.db import models
-from django.utils.timezone import now
 
 from Areas.models import Area
 
@@ -45,8 +43,8 @@ class Equipo(models.Model):
         Modelo, on_delete=models.PROTECT, null=True, related_name="equipo_set"
     )
     estado = models.BooleanField(default=True)
-    fecha_registro = models.DateTimeField(default=now)
-    last_update = models.DateTimeField(default=now)
+    fecha_registro = models.DateTimeField(auto_now_add=True)
+    last_update = models.DateTimeField(auto_now=True)
     estado_equipo = models.ForeignKey(EstadoEquipo, on_delete=models.PROTECT)
     estado_alerta = models.ForeignKey(EstadoAlerta, on_delete=models.PROTECT)
 
@@ -57,8 +55,9 @@ class Equipo(models.Model):
 class Cpu(models.Model):
     equipo = models.ForeignKey(Equipo, on_delete=models.CASCADE, related_name="cpu_set")
     nombre = models.CharField(max_length=50)
-    estado = models.ForeignKey(EstadoHardware, on_delete=models.PROTECT)
-    fecha_registro = models.DateTimeField(default=now)
+    estado = models.ForeignKey(EstadoAlerta, on_delete=models.PROTECT)
+    fecha_registro = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.equipo.hostname} - {self.nombre}"
@@ -69,8 +68,9 @@ class Memory(models.Model):
         Equipo, on_delete=models.CASCADE, related_name="memory_set"
     )
     nombre = models.CharField(max_length=50)
-    estado = models.ForeignKey(EstadoHardware, on_delete=models.PROTECT)
-    fecha_registro = models.DateTimeField(default=now)
+    estado = models.ForeignKey(EstadoAlerta, on_delete=models.PROTECT)
+    fecha_registro = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.equipo.hostname} - {self.nombre}"
@@ -81,8 +81,9 @@ class Disk(models.Model):
         Equipo, on_delete=models.CASCADE, related_name="disk_set"
     )
     nombre = models.CharField(max_length=50)
-    estado = models.ForeignKey(EstadoHardware, on_delete=models.PROTECT)
-    fecha_registro = models.DateTimeField(default=now)
+    estado = models.ForeignKey(EstadoAlerta, on_delete=models.PROTECT)
+    fecha_registro = models.DateTimeField(auto_now_add=True)
+    fecha_actualizacion = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.equipo.hostname} - {self.nombre}"

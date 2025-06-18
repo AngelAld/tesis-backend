@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
-from IA.util import predecir
+from Equipos.models import Cpu, Disk, Memory
+from IA.util import generarAlerta, predecir
 from IA.models import (
     ModeloIA,
     Prediccion,
@@ -99,6 +100,32 @@ class PrediccionManualSerializer(serializers.ModelSerializer):
             validated_data["equipo"] = equipo
             instance = Prediccion.objects.create(**validated_data)
 
+            generarAlerta(
+                equipo=equipo,
+                cpu=(
+                    Cpu.objects.filter(equipo=equipo)
+                    .order_by("-fecha_actualizacion")
+                    .first()
+                    if componente == "cpu"
+                    else None
+                ),
+                memory=(
+                    Memory.objects.filter(equipo=equipo)
+                    .order_by("-fecha_actualizacion")
+                    .first()
+                    if componente == "ram"
+                    else None
+                ),
+                disk=(
+                    Disk.objects.filter(equipo=equipo)
+                    .order_by("-fecha_actualizacion")
+                    .first()
+                    if componente == "disk"
+                    else None
+                ),
+                failure_percentage=failure_percentage,
+            )
+
             return instance
         except Exception as e:
             print("## ERROR ## ")
@@ -107,6 +134,10 @@ class PrediccionManualSerializer(serializers.ModelSerializer):
 
 
 class PrediccionDashboardSerializer(serializers.ModelSerializer):
+    modelo_ia = serializers.CharField(source="modelo_ia.nombre")
+    modelo_equipo = serializers.CharField(source="modelo_equipo.nombre")
+    equipo = serializers.CharField(source="equipo.hostname")
+
     class Meta:
         model = Prediccion
         fields = [

@@ -23,6 +23,7 @@ urlpatterns = [
     path("sensores/", include(SensoresUrls)),
     path("auth/", include(UsuariosUrls)),
     path("ai/", include(IAUrls)),
+    path("notificaciones/", include("Notificaciones.urls")),
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

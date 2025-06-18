@@ -3,7 +3,6 @@ Django settings for Backend project.
 
 """
 
-from operator import truediv
 from pathlib import Path
 import os
 
@@ -34,6 +33,7 @@ ALLOWED_HOSTS = [
 
 INSTALLED_APPS = (
     [
+        "daphne",
         "django.contrib.admin",
         "django.contrib.auth",
         "django.contrib.contenttypes",
@@ -42,13 +42,21 @@ INSTALLED_APPS = (
         "django.contrib.staticfiles",
     ]
     + [
+        "channels",
         "rest_framework",
         "drf_spectacular",
         "corsheaders",
         "rest_framework_simplejwt.token_blacklist",
         "django_filters",
     ]
-    + ["Equipos", "Sensores", "Usuarios", "Areas", "IA"]
+    + [
+        "Notificaciones",
+        "Equipos",
+        "Sensores",
+        "Usuarios",
+        "Areas",
+        "IA",
+    ]
 )
 
 MIDDLEWARE = [
@@ -81,7 +89,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "Backend.wsgi.application"
-
+ASGI_APPLICATION = "Backend.asgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
@@ -143,7 +151,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 # REST FRAMEWORK SETTINGS
 
 
-CORS_ALLOWED_ORIGINS = ["http://localhost:5173", "http://localhost"]
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://localhost",
+]
 
 
 REST_FRAMEWORK = {
@@ -172,4 +183,14 @@ SIMPLE_JWT = {
     "ALGORITHM": "HS256",
     "SIGNING_KEY": SECRET_KEY,
     "AUTH_HEADER_TYPES": ("Bearer",),
+}
+
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("localhost", 6379)],
+        },
+    },
 }

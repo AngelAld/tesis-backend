@@ -7,10 +7,15 @@ For more information on this file, see
 https://docs.djangoproject.com/en/5.1/howto/deployment/asgi/
 """
 
+# tu_proyecto/asgi.py
+
 import os
+import django
+from .routing import application as routing_application
 
-from django.core.asgi import get_asgi_application
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Backend.settings')
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "Backend.settings")
 
-application = get_asgi_application()
+django.setup()
+
+application = routing_application

@@ -1,21 +1,22 @@
 from django.core.management.base import BaseCommand
-from IA.models import Prediccion, ModeloIA, cpu_columns, disk_columns, mem_columns
+from IA.models import ModeloIA, Prediccion, cpu_columns, disk_columns, mem_columns
 from Sensores.models import SensorStats
-from Equipos.models import Equipo
-from datetime import datetime
-from IA.util import predecir
-from datetime import timedelta
+from Equipos.models import Cpu, Disk, Equipo, Memory
+from datetime import datetime, timedelta, time
+from django.utils import timezone
+
+from IA.util import generarAlerta, predecir
 from django.db.models import Avg, Max
 
 
 class Command(BaseCommand):
-    help = "Genera los tipos basicos de planes"
+    help = "Genera las predicciones del dia para los equipos"
 
     def handle(self, *args, **options):
         self.stdout.write(self.style.SUCCESS("Starting the prediction process..."))
 
         # primero obtenemos la data de los sensores del dia
-        stats = SensorStats.objects.filter(fecha_registro__date=datetime.now().date())
+        stats = SensorStats.objects.filter(fecha_registro__date=timezone.now().date())
         self.stdout.write(
             self.style.SUCCESS(f"Found {stats.count()} sensor stats for today.")
         )
@@ -38,22 +39,35 @@ class Command(BaseCommand):
         equipos = Equipo.objects.all()
 
         for equipo in equipos:
+            today = timezone.localtime(timezone.now()).date()
+            start_of_day = timezone.make_aware(datetime.combine(today, time.min))
+            end_of_day = timezone.make_aware(datetime.combine(today, time.max))
 
-            for i in range(0, 24):
-                # obtenemos los registros de los ultimos 20 minutos
-                start_time = datetime.now() - timedelta(hours=24 - i, minutes=20)
-                end_time = datetime.now() - timedelta(hours=24 - i)
+            interval = timedelta(minutes=20)
+            current_time = start_of_day
+
+            while current_time < end_of_day:
+                next_time = current_time + interval
                 stats = SensorStats.objects.filter(
-                    equipo=equipo, fecha_registro__range=[start_time, end_time]
+                    equipo=equipo,
+                    fecha_registro__gte=current_time,
+                    fecha_registro__lt=next_time,
                 )
 
                 if stats.count() == 0:
                     self.stdout.write(
                         self.style.WARNING(
-                            f"No stats found for time range {start_time} - {end_time}."
+                            f"No stats found for time range {current_time} - {next_time}."
                         )
                     )
+                    current_time = next_time
                     continue
+
+                self.stdout.write(
+                    self.style.SUCCESS(
+                        f"Processing stats for {equipo.hostname} from {current_time} to {next_time}."
+                    )
+                )
 
                 avg_variables = []
                 max_variables = []
@@ -76,10 +90,16 @@ class Command(BaseCommand):
 
                 avg_failure_percentage = (
                     abs(avg_expected_value - avg_predicted_value) / avg_expected_value
+                    if avg_expected_value
+                    else None
                 )
                 max_failure_percentage = (
                     abs(max_expected_value - max_predicted_value) / max_expected_value
+                    if max_expected_value
+                    else None
                 )
+
+                fecha_registro = current_time
 
                 Prediccion.objects.create(
                     modelo_ia=modelo,
@@ -204,3 +224,70 @@ class Command(BaseCommand):
                     ],
                     failure_percentage=max_failure_percentage,
                 )
+
+                generarAlerta(
+                    equipo=equipo,
+                    cpu=(
+                        Cpu.objects.filter(equipo=equipo)
+                        .order_by("-fecha_actualizacion")
+                        .first()
+                        if componente == "cpu"
+                        else None
+                    ),
+                    memory=(
+                        Memory.objects.filter(equipo=equipo)
+                        .order_by("-fecha_actualizacion")
+                        .first()
+                        if componente == "ram"
+                        else None
+                    ),
+                    disk=(
+                        Disk.objects.filter(equipo=equipo)
+                        .order_by("-fecha_actualizacion")
+                        .first()
+                        if componente == "disk"
+                        else None
+                    ),
+                    failure_percentage=(
+                        avg_failure_percentage
+                        if avg_failure_percentage is not None
+                        else 0.0
+                    ),
+                )
+                generarAlerta(
+                    equipo=equipo,
+                    cpu=(
+                        Cpu.objects.filter(equipo=equipo)
+                        .order_by("-fecha_actualizacion")
+                        .first()
+                        if componente == "cpu"
+                        else None
+                    ),
+                    memory=(
+                        Memory.objects.filter(equipo=equipo)
+                        .order_by("-fecha_actualizacion")
+                        .first()
+                        if componente == "ram"
+                        else None
+                    ),
+                    disk=(
+                        Disk.objects.filter(equipo=equipo)
+                        .order_by("-fecha_actualizacion")
+                        .first()
+                        if componente == "disk"
+                        else None
+                    ),
+                    failure_percentage=(
+                        max_failure_percentage
+                        if max_failure_percentage is not None
+                        else 0.0
+                    ),
+                )
+
+                self.stdout.write(
+                    self.style.SUCCESS(
+                        f"Predictions saved for {equipo} at {fecha_registro}."
+                    )
+                )
+
+                current_time = next_time

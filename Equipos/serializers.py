@@ -3,7 +3,6 @@ from rest_framework.serializers import ModelSerializer
 from Equipos.models import (
     EstadoEquipo,
     EstadoAlerta,
-    EstadoHardware,
     Area,
     Equipo,
     Cpu,
@@ -17,7 +16,7 @@ from Sensores.models import SensorStats
 
 estadoEquipoDefault, _ = EstadoEquipo.objects.get_or_create(nombre="Bueno")
 estadoAlertaDefault, _ = EstadoAlerta.objects.get_or_create(nombre="Sin alerta")
-estadoHardwareDefault, _ = EstadoHardware.objects.get_or_create(nombre="Bueno")
+# estadoHardwareDefault, _ = EstadoHardware.objects.get_or_create(nombre="Bueno")
 
 
 def validateAreaIp(area: Area, ip):
@@ -44,6 +43,8 @@ def getAreaByIp(ip: str):
 
 
 class CpuSerializer(ModelSerializer):
+    estado = serializers.CharField(source="estado.nombre", read_only=True)
+
     class Meta:
         model = Cpu
         fields = [
@@ -51,6 +52,7 @@ class CpuSerializer(ModelSerializer):
             "nombre",
             # "estado",
             "fecha_registro",
+            "estado",
         ]
         read_only_fields = ["id", "fecha_registro"]
 
@@ -58,7 +60,7 @@ class CpuSerializer(ModelSerializer):
     def create(self, validated_data):
         equipo = validated_data.get("equipo")
         nombre = validated_data.get("nombre")
-        estado = estadoHardwareDefault
+        estado = estadoAlertaDefault
         fecha_registro = now()
 
         cpu, _ = Cpu.objects.get_or_create(
@@ -71,12 +73,15 @@ class CpuSerializer(ModelSerializer):
 
 
 class MemorySerializer(ModelSerializer):
+    estado = serializers.CharField(source="estado.nombre", read_only=True)
+
     class Meta:
         model = Memory
         fields = [
             "id",
             "nombre",
             "fecha_registro",
+            "estado",
         ]
         read_only_fields = ["id", "fecha_registro"]
 
@@ -84,7 +89,7 @@ class MemorySerializer(ModelSerializer):
     def create(self, validated_data):
         equipo = validated_data.get("equipo")
         nombre = validated_data.get("nombre")
-        estado = estadoHardwareDefault
+        estado = estadoAlertaDefault
         fecha_registro = now()
 
         memory, created = Memory.objects.get_or_create(
@@ -102,12 +107,15 @@ class MemorySerializer(ModelSerializer):
 
 
 class DiskSerializer(ModelSerializer):
+    estado = serializers.CharField(source="estado.nombre", read_only=True)
+
     class Meta:
         model = Disk
         fields = [
             "id",
             "nombre",
             "fecha_registro",
+            "estado",
         ]
         read_only_fields = ["id", "fecha_registro"]
 
@@ -115,7 +123,7 @@ class DiskSerializer(ModelSerializer):
     def create(self, validated_data):
         equipo = validated_data.get("equipo")
         nombre = validated_data.get("nombre")
-        estado = estadoHardwareDefault
+        estado = estadoAlertaDefault
         fecha_registro = now()
 
         disk, created = Disk.objects.get_or_create(
